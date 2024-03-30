@@ -1,0 +1,16 @@
+name: crystal
+version: 0.1.0
+
+authors:
+  - RainbowZephyr <darkfeathers9@gmail.com>
+
+crystal: '>= 1.11.2'
+
+license: MIT
+
+dependencies:
+  # snappy:
+  #   github: naqvis/snappy
+
+  zstd: 
+    github: didactic-drunk/zstd.cr
