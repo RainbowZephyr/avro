@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "date"
+require "time"
 require "big"
 
 module Avro
@@ -42,11 +42,11 @@ module Avro
       ERROR_VALUE_MUST_BE_NUMERIC = "value must be numeric"
 
       PACK_UNSIGNED_CHARS = "C*"
-      TEN = Big(10)
+      TEN = BigInt.new(10)
 
       property precision : Int32
       property scale : Int32
-      property factor : Big
+      property factor : BigInt
 
       def initialize(@schema)
         super
@@ -59,7 +59,7 @@ module Avro
       def encode(value)
         raise ArgumentError.new(ERROR_VALUE_MUST_BE_NUMERIC) unless value.is_a?(Numeric)
 
-        to_byte_array(unscaled_value(Big(value)))
+        to_byte_array(unscaled_value(BigDecimal.new(value)))
           .pack(PACK_UNSIGNED_CHARS).freeze
       end
 
@@ -108,7 +108,7 @@ module Avro
     end
 
     module IntDate
-      EPOCH_START = Date.new(1970, 1, 1)
+      EPOCH_START = Time.utc(1970, 1, 1).to_unix
 
       def self.encode(date)
         date.is_a?(Numeric) ? date.to_i : (date - EPOCH_START).to_i
@@ -191,10 +191,10 @@ module Avro
       },
     }
 
-    def self.type_adapter(type, logical_type, schema = nil)
+    def self.type_adapter(type, logical_type, schema = nil) : Avro::LogicalTypes
       return unless logical_type
 
-      adapter = TYPES.fetch(type, {}).fetch(logical_type, Identity)
+      adapter = TYPES.fetch(type, Hash(String, LogicalTypes).new).fetch(logical_type, Identity)
       adapter.is_a?(Class) ? adapter.new(schema) : adapter
     end
   end
