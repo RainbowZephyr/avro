@@ -10,13 +10,16 @@ module Avro::Schemas
       alias_names = Set(String).new
 
       field_data.each do |field|
-        if field.is_a?(Array)
-          type : String = String.from_json(field["type"].to_json)
-          name = field["name"]
-          default = field.key?("default") ? field["default"] : :no_default
-          order = field["order"]
-          doc = field["doc"]
-          aliases = field["aliases"]
+        puts typeof(field)
+        puts field
+        if field.responds_to?(:[])
+          hash = field.as_h
+          type : String = String.from_json(hash["type"].to_json)
+          name = String.from_json(hash["name"].to_json)
+          default = hash.has_key?("default") ? String.from_json(hash["default"].to_json) : "no_default"
+          order = String.from_json(hash.fetch("order", "null").to_json)
+          doc = String.from_json(hash.fetch("doc", "null").to_json)
+          aliases = Array(String).from_json(hash.fetch("aliases", "null").to_json)
           new_field = Field.new(type, name, default, order, names, namespace, doc, aliases)
           # make sure field name has not been used yet
           if field_names.includes?(new_field.name)
