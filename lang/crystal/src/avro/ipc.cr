@@ -421,7 +421,7 @@ module Avro
       end
     end
 
-    class ConnectionClosedError < StandardError; end
+    class ConnectionClosedError < Exception; end
 
     class FramedWriter
       property writer : IO::Memory
