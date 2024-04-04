@@ -4,7 +4,7 @@ module Avro::Schemas
     class FixedSchema < NamedSchema
         getter :size, :precision, :scale
   
-        def initialize(name : String, space : String?, size : Int64, names : Hash(String, Avro::Schemas::AbstractSchema)? = nil, logical_type : String? = nil, aliases : Array(String)? = nil, precision : Int64? = nil, scale : Int64? = nil)
+        def initialize(name : String, space : String?, size : Int64, names : Hash(String, Avro::Schemas::AbstractSchema)? = nil, logical_type : String? = nil, aliases : Array(String)? = nil, precision : Int32? = nil, scale : Int32? = nil)
           # Ensure valid cto args
           unless size.is_a?(Int)
             raise AvroError.new("Fixed Schema requires a valid integer for size property.")

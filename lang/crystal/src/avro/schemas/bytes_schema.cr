@@ -7,10 +7,10 @@ module Avro::Schemas
     ERROR_PRECISION_TOO_SMALL = "Precision must be greater than scale"
 
     getter :precision, :scale
-    @precision : Int64?
-    @scale : Int64?
+    @precision : Int32?
+    @scale : Int32?
 
-    def initialize(type : String, logical_type : String? = nil, precision : Int64? = nil, scale : Int64? = nil)
+    def initialize(type : String, logical_type : String? = nil, precision : Int32? = nil, scale : Int32? = nil)
       super(type, logical_type)
 
       @precision = precision if precision
