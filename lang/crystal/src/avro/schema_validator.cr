@@ -6,8 +6,8 @@ module Avro
     LONG_RANGE = (Schema::LONG_MIN_VALUE..Schema::LONG_MAX_VALUE).freeze
     COMPLEX_TYPES = [:array, :error, :map, :record, :request].freeze
     BOOLEAN_VALUES = [true, false].freeze
-    DEFAULT_VALIDATION_OPTIONS = { recursive: true, encoded: false, fail_on_extra_fields: false }.freeze
-    RECURSIVE_SIMPLE_VALIDATION_OPTIONS = { encoded: true }.freeze
+    DEFAULT_VALIDATION_OPTIONS = { :recursive => true, :encoded => false, :fail_on_extra_fields => false }
+    RECURSIVE_SIMPLE_VALIDATION_OPTIONS = { :encoded => true }
     RUBY_CLASS_TO_AVRO_TYPE = {
       Nil => "null",
       String => "string",
@@ -38,7 +38,7 @@ module Avro
       end
     end
 
-    class ValidationError < StandardError
+    class ValidationError < Exception
       getter result : Result
 
       def initialize(result = Result.new)
@@ -53,8 +53,7 @@ module Avro
 
     TypeMismatchError = Class.new(ValidationError)
 
-    class << self
-      def validate!(expected_schema, logical_datum, options = DEFAULT_VALIDATION_OPTIONS)
+      def self.validate!(expected_schema, logical_datum, options = DEFAULT_VALIDATION_OPTIONS)
         result = Result.new
         if options.fetch(:recursive, true)
           validate_recursive(expected_schema, logical_datum, ROOT_IDENTIFIER, result, options)
@@ -65,7 +64,7 @@ module Avro
         result
       end
 
-      private def validate_recursive(expected_schema, logical_datum, path, result, options)
+      private def self.validate_recursive(expected_schema, logical_datum, path, result, options : Hash(Symbol, Bool))
         datum = resolve_datum(expected_schema, logical_datum, options[:encoded])
 
         validate_simple(expected_schema, datum, path, result, RECURSIVE_SIMPLE_VALIDATION_OPTIONS)
@@ -96,7 +95,7 @@ module Avro
         result.add_error(path, "expected type #{expected_schema.type_sym}, got #{actual_value_message(datum)}")
       end
 
-      private def validate_simple(expected_schema, logical_datum, path, result, options)
+      private def self.validate_simple(expected_schema, logical_datum, path, result, options)
         datum = resolve_datum(expected_schema, logical_datum, options[:encoded])
         validate_type(expected_schema)
 
@@ -128,7 +127,7 @@ module Avro
         result.add_error(path, "expected type #{expected_schema.type_sym}, got #{actual_value_message(datum)}")
       end
 
-      private def resolve_datum(expected_schema, logical_datum, encoded)
+      private def self.resolve_datum(expected_schema, logical_datum, encoded)
         if encoded
           logical_datum
         else
@@ -136,28 +135,28 @@ module Avro
         end
       end
 
-      private def validate_type(expected_schema)
+      private def self.validate_type(expected_schema)
         unless Avro::Schema::VALID_TYPES_SYM.include?(expected_schema.type_sym)
           raise "Unexpected schema type #{expected_schema.type_sym} #{expected_schema.inspect}"
         end
       end
 
-      private def fixed_string_message(size, datum)
+      private def self.fixed_string_message(size, datum)
         "expected fixed with size #{size}, got \"#{datum}\" with size #{datum.bytesize}"
       end
 
-      private def enum_message(symbols, datum)
+      private def self.enum_message(symbols, datum)
         "expected enum with values #{symbols}, got #{actual_value_message(datum)}"
       end
 
-      private def validate_array(expected_schema, datum, path, result, options)
+      private def self.validate_array(expected_schema, datum, path, result, options)
         fail TypeMismatchError unless datum.is_a?(Array)
         datum.each_with_index do |d, i|
           validate_recursive(expected_schema.items, d, "#{path}[#{i}]", result, options)
         end
       end
 
-      private def validate_map(expected_schema, datum, path, result, options)
+      private def self.validate_map(expected_schema, datum, path, result, options)
         fail TypeMismatchError unless datum.is_a?(Hash)
         datum.keys.each do |k|
           result.add_error(path, "unexpected key type '#{ruby_to_avro_type(k.class)}' in map") unless k.is_a?(String)
@@ -168,12 +167,12 @@ module Avro
         end
       end
 
-      private def validate_union(expected_schema, datum, path, result, options)
+      private def self.validate_union(expected_schema, datum, path, result, options)
         if expected_schema.schemas.size == 1
           validate_recursive(expected_schema.schemas.first, datum, path, result, options)
           return
         end
-        failures = []
+        failures = Array(Hash(Symbol, Object))
         compatible_type = first_compatible_type(datum, expected_schema, path, failures, options)
         return unless compatible_type.nil?
 
@@ -186,7 +185,7 @@ module Avro
         end
       end
 
-      private def first_compatible_type(datum, expected_schema, path, failures, options = {})
+      private def self.first_compatible_type(datum, expected_schema, path, failures, options = Hash(Symbol, Boolean))
         expected_schema.schemas.find do |schema|
           # Avoid expensive validation if we're just validating a nil
           next datum.nil? if schema.type_sym == :null
@@ -198,13 +197,13 @@ module Avro
         end
       end
 
-      private def deeper_path_for_hash(sub_key, path)
+      private def self.deeper_path_for_hash(sub_key, path)
         deeper_path = "#{path}#{PATH_SEPARATOR}#{sub_key}"
         deeper_path.squeeze!(PATH_SEPARATOR)
         deeper_path.freeze
       end
 
-      private def actual_value_message(value)
+      private def self.actual_value_message(value)
         avro_type = if value.is_a?(Int32) || value.is_a?(Int64)
                       ruby_integer_to_avro_type(value)
                     else
@@ -217,13 +216,12 @@ module Avro
         end
       end
 
-      private def ruby_to_avro_type(ruby_class)
+      private def self.ruby_to_avro_type(ruby_class)
         RUBY_CLASS_TO_AVRO_TYPE.fetch(ruby_class, ruby_class.to_s)
       end
 
-      private def ruby_integer_to_avro_type(value)
+      private def self.ruby_integer_to_avro_type(value)
         INT_RANGE.cover?(value) ? "int" : "long"
       end
     end
-  end
 end
