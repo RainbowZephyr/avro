@@ -21,7 +21,8 @@ require "big"
 module Avro
   module LogicalTypes
     class LogicalTypeWithSchema
-      property schema : Avro::Schema
+      property :schema 
+      @schema : (Avro::Schemas::BytesSchema | Avro::Schemas::FixedSchema)
 
       def initialize(@schema)
         raise ArgumentError.new("schema is required") if @schema.nil?
@@ -44,16 +45,34 @@ module Avro
       PACK_UNSIGNED_CHARS = "C*"
       TEN = BigInt.new(10)
 
-      property precision : Int32
-      property scale : Int32
-      property factor : BigInt
+      property :precision 
+      property :scale 
+      property :factor 
+      @precision : Int32 = 0
+      @scale : Int32 = 0
+      @factor : BigInt = BigInt.new(0)
 
       def initialize(@schema)
         super
 
-        @scale = @schema.scale.to_i
-        @precision = @schema.precision.to_i
-        @factor = TEN ** @scale
+        if @schema.is_a?(Avro::Schemas::BytesSchema)
+          sch = @schema.as(Avro::Schemas::BytesSchema) 
+          if(!sch.scale.nil? && !sch.precision.nil?)
+            @scale = sch.scale.as(Int32)
+            @precision = sch.precision.as(Int32)
+            @factor = TEN ** @scale
+          end
+        elsif @schema.is_a?(Avro::Schemas::FixedSchema)
+          sch = @schema.as(Avro::Schemas::FixedSchema) 
+          if(!sch.scale.nil? && !sch.precision.nil?)
+            @scale = sch.scale.as(Int32)
+            @precision = sch.precision.as(Int32)
+            @factor = TEN ** @scale
+          end
+        else 
+          raise ArgumentError.new("Cannot have scale in any schema beyond Bytes and Fixed")
+        end
+
       end
 
       def encode(value)
@@ -107,7 +126,7 @@ module Avro
       end
     end
 
-    module IntDate
+    class IntDate < LogicalTypeWithSchema
       EPOCH_START = Time.utc(1970, 1, 1).to_unix
 
       def self.encode(date)
@@ -119,7 +138,7 @@ module Avro
       end
     end
 
-    module TimestampMillis
+    class TimestampMillis < LogicalTypeWithSchema
       SUBUNITS_PER_SECOND = 1000
 
       def self.encode(value)
@@ -135,7 +154,7 @@ module Avro
       end
     end
 
-    module TimestampMicros
+    class TimestampMicros < LogicalTypeWithSchema
       SUBUNITS_PER_SECOND = 1_000_000
 
       def self.encode(value)
@@ -151,7 +170,7 @@ module Avro
       end
     end
 
-    module TimestampNanos
+    class TimestampNanos < LogicalTypeWithSchema
       SUBUNITS_PER_SECOND = 1_000_000_000
 
       def self.encode(value)
@@ -167,7 +186,7 @@ module Avro
       end
     end
 
-    module Identity
+    class Identity < LogicalTypeWithSchema
       def self.encode(datum)
         datum
       end
@@ -191,11 +210,11 @@ module Avro
       },
     }
 
-    def self.type_adapter(type, logical_type, schema = nil) : Avro::LogicalTypes
+    def self.type_adapter(type, logical_type, schema = nil) : Avro::LogicalTypes?
       return unless logical_type
 
       adapter = TYPES.fetch(type, Hash(String, LogicalTypes).new).fetch(logical_type, Identity)
-      adapter.is_a?(Class) ? adapter.new(schema) : adapter
+      return adapter.is_a?(Class) ? adapter.new(schema) : adapter
     end
   end
 end
