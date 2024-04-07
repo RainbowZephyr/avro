@@ -39,7 +39,9 @@ module Avro
     end
 
     class ValidationError < Exception
-      getter result : Result
+      getter result 
+      
+      @result : Result
 
       def initialize(result = Result.new)
         @result = result
@@ -51,7 +53,7 @@ module Avro
       end
     end
 
-    TypeMismatchError = Class.new(ValidationError)
+    # TypeMismatchError = Class.new(ValidationError)
 
       def self.validate!(expected_schema, logical_datum, options = DEFAULT_VALIDATION_OPTIONS)
         result = Result.new
@@ -77,7 +79,7 @@ module Avro
         when :union
           validate_union(expected_schema, datum, path, result, options)
         when :record, :error, :request
-          fail TypeMismatchError unless datum.is_a?(Hash)
+          fail ValidationError.new() unless datum.is_a?(Hash)
           expected_schema.fields.each do |field|
             deeper_path = deeper_path_for_hash(field.name, path)
             nested_value = datum.key?(field.name) ? datum[field.name] : datum[field.name.to_sym]
@@ -91,7 +93,7 @@ module Avro
             end
           end
         end
-      rescue TypeMismatchError
+      rescue e : ValidationError
         result.add_error(path, "expected type #{expected_schema.type_sym}, got #{actual_value_message(datum)}")
       end
 
@@ -99,28 +101,28 @@ module Avro
         datum = resolve_datum(expected_schema, logical_datum, options[:encoded])
         validate_type(expected_schema)
 
-        case expected_schema.type_sym
-        when :null
+        case expected_schema.type
+        when "null"
           fail TypeMismatchError unless datum.nil?
-        when :boolean
+        when "boolean"
           fail TypeMismatchError unless BOOLEAN_VALUES.include?(datum)
-        when :string, :bytes
+        when "string", "bytes"
           fail TypeMismatchError unless datum.is_a?(String)
-        when :int
+        when "int"
           fail TypeMismatchError unless datum.is_a?(Int32) || datum.is_a?(Int64)
           result.add_error(path, "out of bound value #{datum}") unless INT_RANGE.cover?(datum)
-        when :long
+        when "long"
           fail TypeMismatchError unless datum.is_a?(Int64)
           result.add_error(path, "out of bound value #{datum}") unless LONG_RANGE.cover?(datum)
-        when :float, :double
+        when "float", "double"
           fail TypeMismatchError unless datum.is_a?(Float64) || datum.is_a?(Int32) || datum.is_a?(Int64) || datum.is_a?(BigDecimal)
-        when :fixed
+        when "fixed"
           if datum.is_a? String
             result.add_error(path, fixed_string_message(expected_schema.size, datum)) unless datum.bytesize == expected_schema.size
           else
             result.add_error(path, "expected fixed with size #{expected_schema.size}, got #{actual_value_message(datum)}")
           end
-        when :enum
+        when "enum"
           result.add_error(path, enum_message(expected_schema.symbols, datum)) unless expected_schema.symbols.include?(datum)
         end
       rescue TypeMismatchError
@@ -136,8 +138,8 @@ module Avro
       end
 
       private def self.validate_type(expected_schema)
-        unless Avro::Schema::VALID_TYPES_SYM.include?(expected_schema.type_sym)
-          raise "Unexpected schema type #{expected_schema.type_sym} #{expected_schema.inspect}"
+        unless Avro::Schemas::AbstractSchema::VALID_TYPES.includes?(expected_schema.type)
+          raise "Unexpected schema type #{expected_schema.type} #{expected_schema.inspect}"
         end
       end
 
