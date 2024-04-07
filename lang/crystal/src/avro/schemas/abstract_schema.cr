@@ -23,7 +23,7 @@ module Avro::Schemas
     getter :type, :logical_type
 
     # @logical_type : Hash(String, String)
-      @type_adapter : Avro::LogicalTypes? 
+      @type_adapter : Avro::LogicalTypes::LogicalTypeWithSchema?
 
     def initialize(@type : String, @logical_type : String? = nil)
       # @type_sym = type.is_a?(Symbol) ? type : type.to_sym
@@ -35,8 +35,8 @@ module Avro::Schemas
     #   @type_sym.to_s
     # end
 
-    def type_adapter : Avro::LogicalTypes
-      @type_adapter ||= Avro::LogicalTypes.type_adapter(type, logical_type, self) || Avro::LogicalTypes::Identity
+    def type_adapter : Avro::LogicalTypes::LogicalTypeWithSchema?
+      @type_adapter ||= Avro::LogicalTypes.type_adapter(type, logical_type, self) || Avro::LogicalTypes::Identity.new(self)
     end
 
     def md5_fingerprint

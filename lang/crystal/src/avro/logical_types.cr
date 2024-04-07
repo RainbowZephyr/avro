@@ -29,11 +29,11 @@ module Avro
       end
 
       def encode(datum)
-        raise NotImplementedError.new
+        raise NotImplementedError.new("Encoder not implemented for `#{datum}`")
       end
 
       def decode(datum)
-        raise NotImplementedError.new
+        raise NotImplementedError.new("Decoder not implemented for `#{datum}`")
       end
     end
 
@@ -76,10 +76,11 @@ module Avro
       end
 
       def encode(value)
-        raise ArgumentError.new(ERROR_VALUE_MUST_BE_NUMERIC) unless value.is_a?(Numeric)
+        raise ArgumentError.new(ERROR_VALUE_MUST_BE_NUMERIC) unless value.is_a?(Number)
 
-        to_byte_array(unscaled_value(BigDecimal.new(value)))
-          .pack(PACK_UNSIGNED_CHARS).freeze
+        # to_byte_array(unscaled_value(BigDecimal.new(value))).pack(PACK_UNSIGNED_CHARS)
+        bytes = to_byte_array(unscaled_value(BigDecimal.new(value)))
+        String.new(bytes.map(&.to_u8).to_unsafe)
       end
 
       def decode(stream)
@@ -98,42 +99,58 @@ module Avro
         positive ? total : -(total + 1)
       end
 
-      private def to_byte_array(number)
-        result = [] of UInt8
+      # private def to_byte_array(number : Int32)
+      #   result = Array(Int32).new()
 
+      #   loop do
+      #     result.unshift(number & 0xff)
+      #     number >>= 8
+
+      #     break if (number == 0 || number == -1) && (result[0...7] == number & 0x80_u8)
+      #   end
+
+      #   result
+      # end
+
+      private def to_byte_array(number : Int)
+        result = [] of Int32
+      
         loop do
-          result.unshift(number & 0xff)
+          result.unshift(number & 0xff_u8)
           number >>= 8
-
-          break if (number == 0 || number == -1) && (result.first[7] == number[7])
+      
+          break if (number == 0 || number == -1) && (result.first? && (result.first & 0x80_u8) == (number & 0x80_u8))
         end
-
+      
         result
       end
 
       private def unscaled_value(decimal)
-        details = decimal.split
-        length = details[1].size
+        # TODO: Crystal does not support those features
+        # details = decimal.split
+        # length = details[1].size
 
-        fractional_part = length - details[3]
-        raise RangeError.new(ERROR_ROUNDING_NECESSARY) if fractional_part > scale
+        # fractional_part = length - details[3]
+        # raise RangeError.new(ERROR_ROUNDING_NECESSARY) if fractional_part > scale
 
-        if length > precision || (length - fractional_part) > (precision - scale)
-          raise RangeError.new(ERROR_INSUFFICIENT_PRECISION)
-        end
+        # if length > precision || (length - fractional_part) > (precision - scale)
+        #   raise RangeError.new(ERROR_INSUFFICIENT_PRECISION)
+        # end
 
         (decimal * @factor).to_i
       end
     end
 
     class IntDate < LogicalTypeWithSchema
-      EPOCH_START = Time.utc(1970, 1, 1).to_unix
+      EPOCH_START = Time.utc(1970, 1, 1)
 
-      def self.encode(date)
-        date.is_a?(Numeric) ? date.to_i : (date - EPOCH_START).to_i
+      def encode(date)
+        return date.to_i if date.is_a?(Number) 
+        string_date = date.as(String)
+         (Time.parse_utc(string_date, "%F") - EPOCH_START).to_i
       end
 
-      def self.decode(int)
+      def decode(int)
         EPOCH_START + int
       end
     end
@@ -141,14 +158,15 @@ module Avro
     class TimestampMillis < LogicalTypeWithSchema
       SUBUNITS_PER_SECOND = 1000
 
-      def self.encode(value)
-        value.is_a?(Numeric) ? value.to_i : begin
-          time = value.to_time
-          time.to_i * SUBUNITS_PER_SECOND + time.usec / SUBUNITS_PER_SECOND
-        end
+      def encode(value)
+        return value.to_i if value.is_a?(Number)
+          # time = value.to_utc
+          # time.to_i * SUBUNITS_PER_SECOND + time.usec / SUBUNITS_PER_SECOND
+        string_value = value.as(String)
+          Time.parse_iso8601(string_value).to_unix_ms
       end
 
-      def self.decode(int)
+      def decode(int)
         s, ms = int.divmod(SUBUNITS_PER_SECOND)
         Time.at(s, ms, :millisecond).utc
       end
@@ -157,14 +175,15 @@ module Avro
     class TimestampMicros < LogicalTypeWithSchema
       SUBUNITS_PER_SECOND = 1_000_000
 
-      def self.encode(value)
-        value.is_a?(Numeric) ? value.to_i : begin
-          time = value.to_time
-          time.to_i * SUBUNITS_PER_SECOND + time.usec
+      def encode(value)
+        value.is_a?(Number) ? value.to_i : begin
+        string_value = value.as(String)
+          time = Time.parse_iso8601(string_value)
+          time.to_unix * SUBUNITS_PER_SECOND + (time.nanosecond / 1000.0).round.to_i
         end
       end
 
-      def self.decode(int)
+      def decode(int)
         s, us = int.divmod(SUBUNITS_PER_SECOND)
         Time.at(s, us, :microsecond).utc
       end
@@ -173,25 +192,24 @@ module Avro
     class TimestampNanos < LogicalTypeWithSchema
       SUBUNITS_PER_SECOND = 1_000_000_000
 
-      def self.encode(value)
-        value.is_a?(Numeric) ? value.to_i : begin
-          time = value.to_time
-          time.to_i * SUBUNITS_PER_SECOND + time.nsec
-        end
+      def encode(value)
+        return value.to_i if value.is_a?(Number)
+        string_value = value.as(String)
+        Time.parse_iso8601(string_value).to_unix_ns
       end
 
-      def self.decode(int)
+      def decode(int)
         s, ns = int.divmod(SUBUNITS_PER_SECOND)
         Time.at(s, ns, :nanosecond).utc
       end
     end
 
     class Identity < LogicalTypeWithSchema
-      def self.encode(datum)
+      def encode(datum)
         datum
       end
 
-      def self.decode(datum)
+      def decode(datum)
         datum
       end
     end
@@ -210,11 +228,12 @@ module Avro
       },
     }
 
-    def self.type_adapter(type, logical_type, schema = nil) : Avro::LogicalTypes?
+    def self.type_adapter(type : String, logical_type : String?, schema : Avro::Schemas::AbstractSchema? = nil) : (Avro::LogicalTypes::LogicalTypeWithSchema)?
       return unless logical_type
 
-      adapter = TYPES.fetch(type, Hash(String, LogicalTypes).new).fetch(logical_type, Identity)
-      return adapter.is_a?(Class) ? adapter.new(schema) : adapter
+      adapter = TYPES.fetch(type, Hash(String, Avro::LogicalTypes::LogicalTypeWithSchema.class).new).fetch(logical_type, Identity)
+      # return adapter.is_a?(Class) ? adapter.new(schema) : adapter
+      return adapter.new(schema)
     end
   end
 end
