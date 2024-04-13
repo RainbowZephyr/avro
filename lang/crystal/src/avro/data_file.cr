@@ -53,7 +53,7 @@ module Avro
         codec
       elsif codec.is_a?(Class)
         codec.new
-      elsif @codecs.include?(codec.to_s)
+      elsif @codecs.includes?(codec.to_s)
         @codecs[codec.to_s]
       else
         raise DataFileError.new("Unknown codec: #{codec.inspect}")

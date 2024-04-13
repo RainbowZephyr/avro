@@ -4,6 +4,8 @@ module Avro::Schemas
   class RecordSchema < NamedSchema
     getter :fields, :doc
 
+    @fields = Array(Field).new
+
     def self.make_field_objects(field_data, names : Hash(String, Avro::Schemas::AbstractSchema), namespace : String? = nil)  : Array(Field)
       field_objects = Array(Field).new
       field_names = Set(String).new
