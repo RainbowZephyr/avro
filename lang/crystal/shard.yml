@@ -4,7 +4,7 @@ version: 0.1.0
 authors:
   - RainbowZephyr <darkfeathers9@gmail.com>
 
-crystal: '>= 1.11.2'
+crystal: '>= 1.10.0'
 
 license: MIT
 

@@ -23,9 +23,9 @@ module Avro
         end
         puts "$$$$$$$$$$$$$$$$TYPE #{type}"
 
-        precision : Int64?
-        scale : Int64?
-        size : Int64?
+        precision : Int32?
+        scale : Int32?
+        size : Int32?
         namespace : String?
         aliases : Array(String)?
         symbols : Array(String)?
@@ -35,8 +35,8 @@ module Avro
         if Avro::Schemas::AbstractSchema::PRIMITIVE_TYPES.includes?(type)
           case type
           when "bytes"
-            precision = Int64.from_json(hash["precision"].to_json)
-            scale = Int64.from_json(hash["scale"].to_json)
+            precision = Int32.from_json(hash["precision"].to_json)
+            scale = Int32.from_json(hash["scale"].to_json)
             return Avro::Schemas::BytesSchema.new(type, logical_type, precision, scale)
           else
             return Avro::Schemas::PrimitiveSchema.new(type, logical_type)
@@ -53,9 +53,9 @@ module Avro
           # debugger
           case type
           when "fixed"
-            size = Int64.from_json(hash["size"].to_json)
-            precision = Int64.from_json(hash["precision"].to_json)
-            scale = Int64.from_json(hash["scale"].to_json)
+            size = Int32.from_json(hash["size"].to_json)
+            precision = Int32.from_json(hash["precision"].to_json)
+            scale = Int32.from_json(hash["scale"].to_json)
             return Avro::Schemas::FixedSchema.new(name, namespace, size, names, logical_type, aliases, precision, scale)
           when "enum"
             symbols = Array(String).from_json(hash.fetch("symbols", "null").to_json)
