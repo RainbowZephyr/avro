@@ -12,10 +12,10 @@ module Avro::Schemas
 
     NAME_REGEX = /^([A-Za-z_][A-Za-z0-9_]*)(\.([A-Za-z_][A-Za-z0-9_]*))*$/
 
-    INT_MIN_VALUE  = -(1 << 31)
-    INT_MAX_VALUE  = (1 << 31) - 1
-    LONG_MIN_VALUE = -(1 << 63)
-    LONG_MAX_VALUE = (1 << 63) - 1
+    INT_MIN_VALUE  = Int32::MIN
+    INT_MAX_VALUE  = Int32::MAX
+    LONG_MIN_VALUE = Int64::MIN
+    LONG_MAX_VALUE = Int64::MAX
 
     DEFAULT_VALIDATE_OPTIONS = {recursive: true, encoded: false}
     DECIMAL_LOGICAL_TYPE     = "decimal"
@@ -113,13 +113,13 @@ module Avro::Schemas
       type_sym.hash
     end
     
-    def subparse(json_obj : (String | JSON::Any), names : Hash(String, Avro::Schemas::AbstractSchema)? = nil, namespace : String? = nil) : Avro::Schemas::AbstractSchema
+    def subparse(json_obj : (JSON::Any | String), names : Hash(String, Avro::Schemas::AbstractSchema)? = nil, namespace : String? = nil) : Avro::Schemas::AbstractSchema
       if json_obj.is_a?(String) && names.nil?
         fullname = Name.make_fullname(json_obj, namespace)
         return names[fullname] if names.includes?(fullname)
       end
 
-      json = json_obj.as?(JSON::Any).as(JSON::Any)
+      json = JSON.parse(json_obj.to_json)
       begin
         Schema.real_parse(json, names, namespace)
       rescue e

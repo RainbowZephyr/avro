@@ -62,7 +62,7 @@ module Avro
     private def parse_types(types, type_names)
       types.map do |type|
         type_object = Schema.real_parse(type, type_names, namespace)
-        unless VALID_TYPE_SCHEMA_TYPES_SYM.include?(type_object.type_sym)
+        unless VALID_TYPE_SCHEMA_TYPES_SYM.includes?(type_object.type_sym)
           msg = "Type #{type} not an enum, record, fixed or error."
           raise ProtocolParseError.new(msg)
         end
@@ -135,7 +135,7 @@ module Avro
       private def parse_response(response, names)
         if response.is_a?(String) && names
           fullname = Name.make_fullname(response, default_namespace)
-          return names[fullname] if names.include?(fullname)
+          return names[fullname] if names.includes?(fullname)
         end
 
         Schema.real_parse(response, names, default_namespace)

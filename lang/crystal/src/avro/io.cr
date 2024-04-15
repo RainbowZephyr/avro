@@ -288,7 +288,7 @@ module Avro
         index_of_symbol = decoder.read_int
         read_symbol = writers_schema.symbols[index_of_symbol]
 
-        if !readers_schema.symbols.include?(read_symbol) && readers_schema.default
+        if !readers_schema.symbols.includes?(read_symbol) && readers_schema.default
           read_symbol = readers_schema.default
         end
 

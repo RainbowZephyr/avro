@@ -4,14 +4,14 @@ module Avro::Schemas
   class RecordSchema < NamedSchema
     getter :fields, :doc
 
+    @fields = Array(Field).new
+
     def self.make_field_objects(field_data, names : Hash(String, Avro::Schemas::AbstractSchema), namespace : String? = nil)  : Array(Field)
       field_objects = Array(Field).new
       field_names = Set(String).new
       alias_names = Set(String).new
 
       field_data.each do |field|
-        puts typeof(field)
-        puts field
         if field.responds_to?(:[])
           hash = field.as_h
           type : String = String.from_json(hash["type"].to_json)
@@ -19,7 +19,7 @@ module Avro::Schemas
           default = hash.has_key?("default") ? String.from_json(hash["default"].to_json) : "no_default"
           order = String.from_json(hash.fetch("order", "null").to_json)
           doc = String.from_json(hash.fetch("doc", "null").to_json)
-          aliases = Array(String).from_json(hash.fetch("aliases", "null").to_json)
+          aliases = Array(String).from_json(hash.fetch("aliases", [] of String).to_json)
           new_field = Field.new(type, name, default, order, names, namespace, doc, aliases)
           # make sure field name has not been used yet
           if field_names.includes?(new_field.name)
@@ -27,10 +27,10 @@ module Avro::Schemas
           end
           field_names << new_field.name
           # make sure alias has not be been used yet
-          if new_field.aliases && alias_names.intersect?(new_field.aliases.to_set)
-            raise SchemaParseError.new("Alias #{(alias_names & new_field.aliases).to_a} already in use")
+          if new_field.aliases && alias_names.intersects?(new_field.aliases.as(Array(String)).to_set)
+            raise SchemaParseError.new("Alias #{(alias_names & new_field.aliases.as(Array(String)).to_set).to_a} already in use")
           end
-          alias_names.merge(new_field.aliases) if new_field.aliases
+          alias_names + new_field.aliases.as(Array(String)).to_set if new_field.aliases
         else
           raise SchemaParseError.new("Not a valid field: #{field}")
         end

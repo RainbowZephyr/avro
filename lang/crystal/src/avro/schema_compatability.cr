@@ -22,7 +22,7 @@ module Avro
       return true if w_type == :union || r_type == :union
 
       if w_type == r_type
-        return readers_schema.match_schema?(writers_schema) if Schema::PRIMITIVE_TYPES_SYM.include?(r_type)
+        return readers_schema.match_schema?(writers_schema) if Schema::PRIMITIVE_TYPES_SYM.includes?(r_type)
 
         case r_type
         when :request
@@ -36,9 +36,9 @@ module Avro
         end
       end
 
-      if w_type == :int && INT_COERCIBLE_TYPES_SYM.include?(r_type)
+      if w_type == :int && INT_COERCIBLE_TYPES_SYM.includes?(r_type)
         return true
-      elsif w_type == :long && LONG_COERCIBLE_TYPES_SYM.include?(r_type)
+      elsif w_type == :long && LONG_COERCIBLE_TYPES_SYM.includes?(r_type)
         return true
       elsif w_type == :float && r_type == :double
         return true
@@ -77,7 +77,7 @@ module Avro
 
         return false unless Avro::SchemaCompatibility.match_schemas(writers_schema, readers_schema)
 
-        if writers_schema.type_sym != :union && SIMPLE_CHECKS.include?(readers_schema.type_sym)
+        if writers_schema.type_sym != :union && SIMPLE_CHECKS.includes?(readers_schema.type_sym)
           return true
         end
 
@@ -137,7 +137,7 @@ module Avro
       private def recursion_in_progress?(writers_schema, readers_schema)
         key = [writers_schema.object_id, readers_schema.object_id]
 
-        if recursion_set.include?(key)
+        if recursion_set.includes?(key)
           true
         else
           recursion_set.add(key)

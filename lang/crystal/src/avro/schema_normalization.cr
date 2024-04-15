@@ -17,8 +17,8 @@ module Avro
     private def normalize_schema(schema)
       type = schema.type_sym.to_s
 
-      if Schema::NAMED_TYPES.include?(type)
-        if @processed_names.include?(schema.name)
+      if Schema::NAMED_TYPES.includes?(type)
+        if @processed_names.includes?(schema.name)
           return schema.name
         else
           @processed_names << schema.name

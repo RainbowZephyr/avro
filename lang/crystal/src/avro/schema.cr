@@ -21,7 +21,6 @@ module Avro
         unless Avro::Schemas::AbstractSchema::VALID_TYPES.includes?(type)
           raise SchemaParseError.new("Unknown type: #{type}")
         end
-        puts "$$$$$$$$$$$$$$$$TYPE #{type}"
 
         precision : Int32?
         scale : Int32?
@@ -35,8 +34,8 @@ module Avro
         if Avro::Schemas::AbstractSchema::PRIMITIVE_TYPES.includes?(type)
           case type
           when "bytes"
-            precision = Int32.from_json(hash["precision"].to_json)
-            scale = Int32.from_json(hash["scale"].to_json)
+            precision = Int32.from_json(hash.fetch("precision", "nil").to_json)
+            scale = Int32.from_json(hash.fetch("scale", "nil").to_json)
             return Avro::Schemas::BytesSchema.new(type, logical_type, precision, scale)
           else
             return Avro::Schemas::PrimitiveSchema.new(type, logical_type)
@@ -53,9 +52,9 @@ module Avro
           # debugger
           case type
           when "fixed"
-            size = Int32.from_json(hash["size"].to_json)
-            precision = Int32.from_json(hash["precision"].to_json)
-            scale = Int32.from_json(hash["scale"].to_json)
+            size = Int32.from_json(hash.fetch("size", "nil").to_json)
+            precision = Int32.from_json(hash.fetch("precision", "nil").to_json)
+            scale = Int32.from_json(hash.fetch("scale", "nil").to_json)
             return Avro::Schemas::FixedSchema.new(name, namespace, size, names, logical_type, aliases, precision, scale)
           when "enum"
             symbols = Array(String).from_json(hash.fetch("symbols", "null").to_json)
@@ -64,10 +63,8 @@ module Avro
             namespace = "" if namespace.nil?
             return Avro::Schemas::EnumSchema.new(name, namespace.as(String), symbols, names, doc, default, aliases)
           when "record", "error"
-            puts "@@@@@@@@@@@@@ ENTERED"
             fields = Array(JSON::Any).from_json(hash["fields"].to_json)
             doc = String.from_json(hash.fetch("doc", "null").to_json)
-            puts "DOC #{doc} #{fields}"
             # debugger
             namespace = "" if namespace.nil?
             return Avro::Schemas::RecordSchema.new(name, namespace.as(String), fields, names, type, doc, aliases)

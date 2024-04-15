@@ -40,15 +40,15 @@ module Avro::Schemas
 
     private def validate_decimal!
       if !@precision.nil?
-        raise Avro::SchemaParseError.new(ERROR_INVALID_PRECISION) unless @precision.as(Int64).positive?
+        raise Avro::SchemaParseError.new(ERROR_INVALID_PRECISION) unless @precision.as(Int32).positive?
       end
 
       if !@scale.nil?
-        raise Avro::SchemaParseError.new(ERROR_INVALID_SCALE) if @scale.as(Int64).negative?
+        raise Avro::SchemaParseError.new(ERROR_INVALID_SCALE) if @scale.as(Int32).negative?
       end
 
       if !@precision.nil? && !@scale.nil?
-        raise Avro::SchemaParseError.new(ERROR_PRECISION_TOO_SMALL) if @precision.as(Int64) < @scale.as(Int64)
+        raise Avro::SchemaParseError.new(ERROR_PRECISION_TOO_SMALL) if @precision.as(Int32) < @scale.as(Int32)
       end
     end
   end
