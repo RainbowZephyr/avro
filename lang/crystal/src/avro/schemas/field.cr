@@ -20,7 +20,7 @@ module Avro::Schemas
     end
 
     def default?
-      @default != :no_default
+      @default != "no_default"
     end
 
     def to_avro(names = Set.new)
@@ -43,6 +43,7 @@ module Avro::Schemas
         type_for_default = @field_type
       end
 
+      puts "######## LOGIC #{type}"
       case type_for_default.logical_type
       when DECIMAL_LOGICAL_TYPE
         # https://avro.apache.org/docs/1.11.1/specification/#schema-record

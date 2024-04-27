@@ -11,8 +11,9 @@ module Avro
     end
 
     def self.real_parse(json_obj : JSON::Any, names : Hash(String, Avro::Schemas::AbstractSchema), default_namespace : String? = nil) : Avro::Schemas::AbstractSchema
-      begin
-        # if json_obj.is_a?(Hash)
+      # begin
+      # if json_obj.is_a?(Hash)
+      if !json_obj.as_h?.nil?
         hash = json_obj.as_h
         type : String = String.from_json(hash["type"].to_json)
         logical_type : String? = String.from_json(hash.fetch("logicalType", "nil").to_json)
@@ -82,20 +83,21 @@ module Avro
             raise SchemaParseError.new("Unknown Valid Type: #{type}")
           end
         end
-      rescue e : TypeCastError
-        puts "!!!!!!!!!!!!!!!!!! #{e}"
-      end
+        # rescue e : TypeCastError
+        #   puts "!!!!!!!!!!!!!!!!!! base #{e}"
+        #   raise e
+        # end
 
-      begin
-        # elsif json_obj.is_a?(Array)
+        # begin
+      elsif !json_obj.as_a?.nil?
         array = json_obj.as_a
         return Avro::Schemas::UnionSchema.new(array, names, default_namespace)
-      rescue e : TypeCastError
-        puts "!!!!!!!!!!!!!!!!!! #{e}"
-      end
+        # rescue e : TypeCastError
+        # puts "!!!!!!!!!!!!!!!!!! #{e}"
+        # end
 
-      # elsif Avro::Schemas::AbstractSchema::PRIMITIVE_TYPES.includes?(json_obj)
-      if Avro::Schemas::AbstractSchema::PRIMITIVE_TYPES.includes?(json_obj)
+      elsif Avro::Schemas::AbstractSchema::PRIMITIVE_TYPES.includes?(json_obj)
+        # if Avro::Schemas::AbstractSchema::PRIMITIVE_TYPES.includes?(json_obj)
         type = String.from_json(json_obj.to_json)
         return Avro::Schemas::PrimitiveSchema.new(type)
       else

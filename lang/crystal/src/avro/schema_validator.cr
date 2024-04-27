@@ -64,6 +64,7 @@ module Avro
 
       def self.validate!(expected_schema, logical_datum, options = DEFAULT_VALIDATION_OPTIONS)
         result = Result.new
+        puts "$$$$$$$$$ #{options} schema #{expected_schema.type} datum #{logical_datum}"
         if options.fetch(:recursive, true)
           validate_recursive(expected_schema, logical_datum, ROOT_IDENTIFIER, result, options)
         else
@@ -110,6 +111,7 @@ module Avro
         datum = resolve_datum(expected_schema, logical_datum, options[:encoded])
         validate_type(expected_schema)
 
+        puts "&&&& SIMPLE #{datum}"
         case expected_schema.type
         when "null"
           raise ValidationError.new() unless datum.nil?
@@ -139,6 +141,7 @@ module Avro
       end
 
       private def self.resolve_datum(expected_schema, logical_datum, encoded)
+        puts "ENC #{encoded} \nlogical #{logical_datum} \nexpected #{expected_schema}"
         if encoded
           logical_datum
         else
